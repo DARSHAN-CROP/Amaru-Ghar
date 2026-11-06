@@ -1,4 +1,4 @@
-<!doctype html><html lang="gu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FF5A5F"><title>Savsani Family</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.png"><script src="firebase-config.js"></script><style>
+<!doctype html><html lang="gu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FF5A5F"><title>Savsani Family</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.png"><script src="firebase-config.js"></script><script src="lang.js"></script><style>
 :root{--c:#FF5A5F;--c2:#7C4DFF;--bg:#f6f4f8;--card:#fff;--ink:#1b1b22;--mut:#6b6b78;--ok:#1E9E63;--bad:#D64545;--line:#e8e6ee}
 body.dark{--bg:#0f0e15;--card:#1a1923;--ink:#f1f0f6;--mut:#a3a1b3;--line:#2b2a38}
 body.hc{--mut:#3a3a46}body.dark.hc{--mut:#dcdae8}body.bold{font-weight:700}
@@ -51,6 +51,8 @@ body.glass.dark input,body.glass.dark select,body.glass.dark textarea{background
 body.glass header{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 80%,transparent),color-mix(in srgb,var(--c2) 80%,transparent));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 body.glass .btn.g{background:rgba(255,255,255,.35);color:var(--ink)}
 body.glass nav button.on{box-shadow:0 4px 14px rgba(124,77,255,.35)}
+.langov{position:fixed;inset:0;background:#000a;z-index:200;overflow:auto;padding:10px}
+[dir=rtl] .bub,[dir=rtl] .row{direction:rtl}
 </style></head><body><header><img src="icon.png" alt=""><h1 id="ttl"></h1><button id="lang"></button></header><main id="m"></main><nav id="nav"></nav><div id="lock"></div><script>
 var famHook=function(){};var famHook=function(){};var LS="amaru_ghar_v1",gu=true,tab=0,sub=null,S,user=null,push=function(){};
 var T={
@@ -78,12 +80,12 @@ notif:["રિમાઇન્ડર નોટિફિકેશન ચાલુ 
 w_tasks:["આજના કામ","Today's chores"],w_shop:["શોપિંગ બાકી","Shopping left"],w_rem:["આગળનું રિમાઇન્ડર","Next reminder"],
 menu_health:["હેલ્થ","Health"],menu_vault:["તિજોરી","Vault"],menu_mem:["યાદો","Memories"],menu_love:["પ્રેમ નોંધ","Love notes"],menu_anni:["એનિવર્સરી","Anniversary"],menu_emerg:["ઇમરજન્સી","Emergency"],menu_set:["સેટિંગ","Settings"]
 };
-function t(k){return T[k]?T[k][gu?0:1]:k}
+var LANG="gu";function t(k){if(!T[k])return k;if(LANG==="gu")return T[k][0];var x=window.LX&&LX[LANG];return (x&&x[k])||T[k][1]}
 var CATS=["food","grocery","bill","travel","health","shop","kids","other"],KINDS=["bill","emi","ins","veh","bday","anni","doc","other"];
 var COLORS=["#FF5A5F","#7C4DFF","#2F6FED","#00897B","#F57C00","#E91E63","#1E9E63","#2B2B2B"],ZOOMS=[0.9,1,1.15,1.3];
 function blank(){return{del:{},exp:[],budgets:{},goals:[],shop:[],tasks:[],rem:[],meds:[],visits:[],records:[],mem:[],notes:[],emerg:{blood:"",contacts:"",allergy:""},anni:"",settings:{lang:"gu"},updated:0}}
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-function load(){try{S=JSON.parse(localStorage.getItem(LS))||blank()}catch(e){S=blank()}var b=blank();Object.keys(b).forEach(function(k){if(S[k]==null)S[k]=b[k]});S.settings=Object.assign(b.settings,S.settings||{});gu=S.settings.lang!=="en"}
+function load(){try{S=JSON.parse(localStorage.getItem(LS))||blank()}catch(e){S=blank()}var b=blank();Object.keys(b).forEach(function(k){if(S[k]==null)S[k]=b[k]});S.settings=Object.assign(b.settings,S.settings||{});LANG=S.settings.lang||"gu";gu=LANG==="gu";document.documentElement.lang=LANG;document.documentElement.dir=/^(ar|ur|fa|he)$/.test(LANG)?"rtl":"ltr"}
 function save(){S.updated=Date.now();try{famHook()}catch(e){}localStorage.setItem(LS,JSON.stringify(S));try{push()}catch(e){}bridge()}
 function $(s){return document.querySelector(s)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -111,7 +113,7 @@ function bridge(){if(!window.AndroidBridge)return;try{var rm=reminders(),tk=S.ta
  AndroidBridge.scheduleAlarms(JSON.stringify(al))}catch(e){}}
 /* ---- shell ---- */
 var MENU=["fam","health","vault","mem","love","anni","emerg","set"];
-function render(){applyTheme();document.title=t("app");$("#ttl").textContent=t("app");$("#lang").textContent=gu?"English":"ગુજરાતી";
+function render(){applyTheme();document.title=t("app");$("#ttl").textContent=t("app");$("#lang").textContent="🌐 "+((window.LX_NAMES&&LX_NAMES[LANG])||LANG);
  var nav=$("#nav");nav.innerHTML="";var ks=[["t_home","🏠"],["t_chat","💬"],["t_money","💰"],["t_list","🛒"],["t_rem","⏰"],["t_more","☰"]];
  ks.forEach(function(k,i){var b=el('<button class="'+(tab===i?"on":"")+'"><b>'+k[1]+(i===1?'<span id="cbadge" class="badge" style="display:none"></span>':'')+'</b>'+t(k[0])+'</button>');b.onclick=function(){tab=i;sub=null;render()};nav.appendChild(b)});
  var m=$("#m");m.innerHTML="";[vHome,vChat,vMoney,vLists,vRem,vMore][tab](m);updBadge();document.body.classList.toggle('chatv',tab===1&&!!fam());window.scrollTo(0,0)}
@@ -213,11 +215,12 @@ function sSet(m){
  b.querySelector("#im").onclick=function(){b.querySelector("#fi").click()};b.querySelector("#fi").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(!d.exp)throw 0;S=d;load2();save();render()}catch(e){alert("Invalid file")}};r.readAsText(f)};
  b.querySelector("#cs").onclick=function(){var rows=[["Date","Category","Note","Amount (Rs)"]];S.exp.slice().sort(function(a,b){return a.ts-b.ts}).forEach(function(e){rows.push([dkey(new Date(e.ts)),t("c_"+e.cat),e.note||"",(e.amt/100).toFixed(2)])});dl("amaru-ghar-"+dkey()+".csv","\ufeff"+rows.map(function(r){return r.map(function(v){v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(",")}).join("\r\n"),"text/csv")};
  b.querySelector("#pr").onclick=function(){window.print()};m.appendChild(b)}
-function load2(){var b=blank();Object.keys(b).forEach(function(k){if(S[k]==null)S[k]=b[k]});S.settings=Object.assign(b.settings,S.settings||{});gu=S.settings.lang!=="en"}
+function load2(){var b=blank();Object.keys(b).forEach(function(k){if(S[k]==null)S[k]=b[k]});S.settings=Object.assign(b.settings,S.settings||{});LANG=S.settings.lang||"gu";gu=LANG==="gu";document.documentElement.lang=LANG;document.documentElement.dir=/^(ar|ur|fa|he)$/.test(LANG)?"rtl":"ltr"}
 function dl(name,data,type){if(window.AndroidBridge&&AndroidBridge.saveFile){AndroidBridge.saveFile(name,data,type);return}var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:type+";charset=utf-8"}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
 /* sync hooks for sync.js */
 window.agUser=function(u){user=u;render()};window.agGet=function(){return S};window.agApply=function(r){S=r;load2();localStorage.setItem(LS,JSON.stringify(S));render();bridge()};window.agSetPush=function(f){push=f};
-$("#lang").onclick=function(){gu=!gu;S.settings.lang=gu?"gu":"en";save();render()};
+$("#lang").onclick=function(){var o=document.createElement("div");o.className="langov";var h='<div class="card" style="max-width:420px;margin:40px auto"><div class="big">🌐 Language / ભાષા</div><input id="lq" placeholder="Search…">';var L=window.LX_NAMES||{gu:"ગુજરાતી",en:"English"};Object.keys(L).forEach(function(c){h+='<button class="btn g lg" data-c="'+c+'" style="margin-top:6px;text-align:left">'+L[c]+(c===LANG?" ✓":"")+'</button>'});h+='<button class="btn g" id="lx" style="margin-top:10px">✕</button></div>';o.innerHTML=h;document.body.appendChild(o);
+ o.querySelectorAll(".lg").forEach(function(b){b.onclick=function(){S.settings.lang=b.dataset.c;LANG=b.dataset.c;load2();save();o.remove();render()}});o.querySelector("#lx").onclick=function(){o.remove()};o.querySelector("#lq").oninput=function(){var q=this.value.toLowerCase();o.querySelectorAll(".lg").forEach(function(b){b.style.display=(b.textContent.toLowerCase().indexOf(q)>-1||b.dataset.c.indexOf(q)>-1)?"":"none"})}};
 /* lock */
 function lockInit(){var pin=localStorage.getItem("ag_pin");if(!pin)return;var L=$("#lock");L.style.display="flex";L.innerHTML='<div class="card"><div class="big">🔒 '+t("app")+'</div><input id="lp" type="password" inputmode="numeric" placeholder="'+t("enter_pin")+'"><button class="btn" id="lg">'+t("unlock")+'</button><div class="muted" id="le"></div></div>';
  function go(){hash(L.querySelector("#lp").value).then(function(h){if(h===pin){L.style.display="none"}else L.querySelector("#le").textContent=t("wrong")})}

@@ -16,6 +16,7 @@ A private family app (earlier called "Amaru Ghar / Our Home") with a WhatsApp-st
 - Anniversary countdown, love-note cards, emergency card with tap-to-call numbers
 - Android: two home-screen widgets (Today and Shopping list), reminder notifications, fingerprint unlock, Google sync
 - Family chat like WhatsApp: create a family, invite with a code, live messages, photos, seen ticks; expenses, lists, reminders and notes are shared between everyone in the family
+- 36 languages (Gujarati, English, Hindi, Marathi, Bengali, Tamil, Telugu, Kannada, Malayalam, Punjabi, Urdu, Spanish, French, German, Arabic, Japanese, Chinese and more), picked from the top bar
 - Glass theme, dark mode with the dark logo, colours, text size, bold and high contrast; PIN lock; backup and restore; CSV and PDF reports
 
 ## Download (latest release)
@@ -49,6 +50,9 @@ Open `app/` in Android Studio, or run `./gradlew testDebugUnitTest` and `./gradl
 Documents and vault photos stay on your device. Family chat and shared lists are stored in the family's Firebase document, readable by anyone who has the family code. Signing in with Google also syncs your own data between your own devices.
 
 ## Honest notes
+
+The non-Gujarati, non-English translations are machine-made and have not been reviewed by native speakers; some words may sound off. Tell us and we will fix them.
+
 
 Tested in a headless browser and on a simulated Android 14 phone only. Widgets, reminders, fingerprint and Google sign-in have not been run on a real phone yet. The family chat has only been tested with two simulated browsers, not on two real phones. Chat messages are fetched every few seconds (no push notifications while the app is closed). Anyone who has the family code can join, so share the code only with family.
 
