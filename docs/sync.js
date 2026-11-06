@@ -1,6 +1,6 @@
 // Google sign-in + online sync (Firebase). Stored in the same per-user document, field "home".
 const cfg = window.FIREBASE_CONFIG;
-if (cfg) {
+if (cfg && !window.AndroidBridge) {
   const V = "10.12.2";
   try {
   const [{ initializeApp }, A, F] = await Promise.all([

@@ -197,6 +197,39 @@ function lockInit(){var pin=localStorage.getItem("ag_pin");if(!pin)return;var L=
  function go(){hash(L.querySelector("#lp").value).then(function(h){if(h===pin){L.style.display="none"}else L.querySelector("#le").textContent=t("wrong")})}
  L.querySelector("#lg").onclick=go;L.querySelector("#lp").onkeydown=function(e){if(e.key==="Enter")go()}}
 document.addEventListener("visibilitychange",function(){if(document.hidden)window.__hid=Date.now();else if(window.__hid&&Date.now()-window.__hid>30000)lockInit()});
+
+/* ---- Android native: sign-in via browser hand-off, sync over REST through the bridge, fingerprint, back button ---- */
+window.agBack=function(){if(sub){sub=null;render();return true}if(tab!==0){tab=0;render();return true}return false};
+(function(){ if(!window.AndroidBridge)return;
+ var KEY="AIzaSyASuS7s9YNWW3fDjaV5NAitiSBpumxs46c",DBP="projects/student-planner-darshan/databases/(default)/documents",CB={},busy=false,tmr=null,statusTxt="";
+ window.__httpCb=function(id,code,out){var f=CB[id];delete CB[id];if(f)f(code,out)};
+ function http(m,u,b,ty,bearer){return new Promise(function(res){var id=id_();CB[id]=function(c,o){res({code:c,body:o})};AndroidBridge.http(id,m,u,b||"",ty||"",bearer||"")})}
+ function id_(){return Math.random().toString(36).slice(2)}
+ function auth(){try{return JSON.parse(AndroidBridge.getAuth())}catch(e){return{}}}
+ window.SYNC_READY=true;
+ function setUser(){var a=auth();user=a.refresh?{email:a.email}:null}
+ async function run(){ if(busy)return;var a=auth();if(!a.refresh)return;busy=true;
+  try{
+   var tk=await http("POST","https://securetoken.googleapis.com/v1/token?key="+KEY,"grant_type=refresh_token&refresh_token="+encodeURIComponent(a.refresh),"application/x-www-form-urlencoded");
+   if(tk.code>=400)throw new Error("auth "+tk.code);var j=JSON.parse(tk.body);AndroidBridge.setRefresh(j.refresh_token||a.refresh);var uid=j.user_id||a.uid,name=DBP+"/planner/"+uid;
+   var g=await http("GET","https://firestore.googleapis.com/v1/"+name,"","",j.id_token);var remote=null;
+   if(g.code===200){var f=JSON.parse(g.body).fields;if(f&&f.home)remote=JSON.parse(f.home.stringValue)}else if(g.code!==404)throw new Error("read "+g.code);
+   var mine=S;
+   if(remote&&remote.updated>mine.updated){S=remote;load2();localStorage.setItem(LS,JSON.stringify(S));render()}
+   else if(!remote||remote.updated<mine.updated){var body=JSON.stringify({writes:[{update:{name:name,fields:{home:{stringValue:JSON.stringify(S)}}},updateMask:{fieldPaths:["home"]}}]});
+    var w=await http("POST","https://firestore.googleapis.com/v1/projects/student-planner-darshan/databases/(default)/documents:commit",body,"application/json",j.id_token);if(w.code>=400)throw new Error("write "+w.code)}
+   statusTxt="OK "+new Date().toTimeString().slice(0,5);
+  }catch(e){statusTxt="Error: "+e.message}
+  busy=false;setUser()}
+ push=function(){clearTimeout(tmr);tmr=setTimeout(run,2500)};
+ window.agNativeInit=function(){setUser();run().then(function(){render()})};
+ window.agSignIn=function(){AndroidBridge.signIn()};window.agSignOut=function(){AndroidBridge.signOut();setUser();render()};
+ setUser();setTimeout(run,1500);document.addEventListener("visibilitychange",function(){if(!document.hidden)run()});
+ /* fingerprint on the lock screen */
+ var _li=lockInit;lockInit=function(){_li();var L=$("#lock");if(L.style.display==="flex"&&AndroidBridge.canBiometric()){var b=el('<button class="btn g">👆 Fingerprint</button>');b.onclick=function(){AndroidBridge.biometric()};var c=L.querySelector(".card");c.insertBefore(b,c.querySelector("#le"));setTimeout(function(){AndroidBridge.biometric()},300)}};
+ window.agBioOk=function(){$("#lock").style.display="none"};
+})();
+
 load();render();lockInit();bridge();
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 setInterval(function(){if(!window.AndroidBridge&&"Notification" in window&&Notification.permission==="granted"){var k="ag_n_"+dkey();if(localStorage.getItem(k))return;var r=reminders().filter(function(x){return x.n<=0});if(r.length){localStorage.setItem(k,1);new Notification(t("app"),{body:r.map(function(x){return x.r.title}).join(", ")})}}},60000);

@@ -1,0 +1,19 @@
+name: Publish Amaru Ghar release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release v1.0 with the APK and the Windows launcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v1.0 >/dev/null 2>&1 || gh release create v1.0 --title "Amaru Ghar V1.0 (latest)" --latest --notes "First release: Android app (widgets, reminders, fingerprint, sync, works offline) and Windows launcher. Website works on any phone or PC. Tested in a headless browser only; the APK and exe have not been run on a real device."
+          gh release upload v1.0 release/Amaru_Ghar_V1.apk release/Amaru_Ghar_Windows.exe --clobber
