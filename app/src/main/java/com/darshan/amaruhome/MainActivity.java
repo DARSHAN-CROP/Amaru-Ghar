@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
     static final String HOST = "appassets.androidplatform.net";
     WebView web;
     ValueCallback<Uri[]> chooser;
+    Uri camUri;
     final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
@@ -107,6 +108,17 @@ public class MainActivity extends Activity {
             public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
                 if (chooser != null) chooser.onReceiveValue(null);
                 chooser = cb;
+                if (p.isCaptureEnabled()) {
+                    try {
+                        String nm = "cam" + System.currentTimeMillis() + ".jpg";
+                        camUri = Uri.parse("content://" + getPackageName() + ".files/" + nm);
+                        Intent ci = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                        ci.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, camUri);
+                        ci.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivityForResult(ci, 78);
+                        return true;
+                    } catch (Exception e) { chooser = null; return false; }
+                }
                 try { startActivityForResult(p.createIntent(), 77); } catch (Exception e) { chooser = null; return false; }
                 return true;
             }
@@ -146,6 +158,9 @@ public class MainActivity extends Activity {
             }
             chooser.onReceiveValue(out);
             chooser = null;
+        } else if (code == 78 && chooser != null) {
+            chooser.onReceiveValue(res == RESULT_OK && camUri != null ? new Uri[]{camUri} : null);
+            chooser = null;
         } else super.onActivityResult(code, res, data);
     }
 
@@ -174,6 +189,22 @@ public class MainActivity extends Activity {
                 dir.mkdirs();
                 File f = new File(dir, new File(name).getName());
                 try (FileOutputStream o = new FileOutputStream(f)) { o.write(data.getBytes("UTF-8")); }
+                Uri u = Uri.parse("content://" + getPackageName() + ".files/" + f.getName());
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType(type);
+                i.putExtra(Intent.EXTRA_STREAM, u);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(i, name));
+            } catch (Exception e) { toast("Error: " + e.getMessage()); }
+        }
+
+        @JavascriptInterface
+        public void saveB64(String name, String b64, String type) {
+            try {
+                File dir = new File(getCacheDir(), "statements");
+                dir.mkdirs();
+                File f = new File(dir, new File(name).getName());
+                try (FileOutputStream o = new FileOutputStream(f)) { o.write(android.util.Base64.decode(b64, android.util.Base64.DEFAULT)); }
                 Uri u = Uri.parse("content://" + getPackageName() + ".files/" + f.getName());
                 Intent i = new Intent(Intent.ACTION_SEND);
                 i.setType(type);
