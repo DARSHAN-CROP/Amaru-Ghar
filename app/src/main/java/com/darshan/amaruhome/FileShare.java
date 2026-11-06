@@ -21,6 +21,10 @@ public class FileShare extends ContentProvider {
 
     @Override public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
         File f = file(uri);
+        if (mode != null && mode.contains("w")) {
+            try { f.getParentFile().mkdirs(); f.createNewFile(); } catch (Exception e) { throw new FileNotFoundException(); }
+            return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_WRITE | ParcelFileDescriptor.MODE_TRUNCATE);
+        }
         if (!f.exists()) throw new FileNotFoundException();
         return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY);
     }
