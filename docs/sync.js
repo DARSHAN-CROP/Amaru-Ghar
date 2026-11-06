@@ -13,6 +13,7 @@ if (cfg && !window.AndroidBridge) {
   const db = F.getFirestore(app);
   window.SYNC_READY = true;
   let unsub = null, timer = null;
+  window.agToken = async () => auth.currentUser ? { token: await auth.currentUser.getIdToken(), uid: auth.currentUser.uid } : null;
   window.agSignIn = () => A.signInWithPopup(auth, new A.GoogleAuthProvider()).catch((e) => alert(e.message));
   window.agSignOut = () => A.signOut(auth);
   A.onAuthStateChanged(auth, (user) => {
