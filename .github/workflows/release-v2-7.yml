@@ -1,0 +1,19 @@
+name: Publish Savsani Family release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release v2.7 with the APK and the Windows launcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v2.7 >/dev/null 2>&1 || gh release create v2.7 --title "Savsani Family V2.7 (latest)" --latest --notes "V2.7: bigger files in the family chat (documents, audio, small videos up to 6 MB) stored free in extra documents, download/open/share, storage meter."
+          gh release upload v2.7 release/Savsani_Family_V2_7.apk release/Savsani_Family_Windows.exe --clobber

@@ -55,7 +55,7 @@ body.glass nav button.on{box-shadow:0 4px 14px rgba(124,77,255,.35)}
 [dir=rtl] .bub,[dir=rtl] .row{direction:rtl}
 .agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.aitem{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 2px;font-size:11px;color:var(--ink)}.aitem span{display:block;font-size:26px}
 .mgal{display:grid;gap:3px;grid-template-columns:1fr 1fr}.mgal.g1{grid-template-columns:1fr}.mgal img{width:100%;height:120px;object-fit:cover;border-radius:8px;margin:0}.mgal.g1 img{height:auto;max-height:300px}
-.fcard{background:#0001;border-radius:10px;padding:8px;margin-bottom:3px}.fcard a{color:inherit;font-weight:700}.popt{margin-top:8px;cursor:pointer}.clip{background:none;border:0}
+.fprog{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:#000c;color:#fff;padding:14px 22px;border-radius:14px;z-index:400;font-weight:700}.fcard{background:#0001;border-radius:10px;padding:8px;margin-bottom:3px}.fcard a{color:inherit;font-weight:700}.popt{margin-top:8px;cursor:pointer}.clip{background:none;border:0}
 .sheetov{position:fixed;inset:0;background:rgba(0,0,0,.42);opacity:0;z-index:150;display:flex;align-items:flex-end;justify-content:center;transition:opacity .22s ease}
 .sheetov.show{opacity:1}
 .sheet{will-change:transform;contain:layout paint;width:100%;max-width:720px;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:8px 16px calc(22px + env(safe-area-inset-bottom));transform:translate3d(0,105%,0);transition:transform .32s cubic-bezier(.22,1,.36,1);max-height:82vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
@@ -293,7 +293,7 @@ T.glass=["ગ્લાસી થીમ","Glass theme"];
 
 /* ================= FAMILY: WhatsApp-style chat + shared data (Firestore REST, deals/<code>) ================= */
 var DBN="projects/student-planner-darshan/databases/(default)/documents",CMT="https://firestore.googleapis.com/v1/projects/student-planner-darshan/databases/(default)/documents:commit",FAMK="ag_fam",FP="https://firestore.googleapis.com/v1/projects/student-planner-darshan/databases/(default)/documents/deals/",FKEY="AIzaSyASuS7s9YNWW3fDjaV5NAitiSBpumxs46c";
-var FAMD=null,famTimer=null,famBusy=false,famErr="",lastSeen=parseInt(localStorage.getItem("ag_seen")||"0",10),famOpen=false;
+var FAMO=null,FAMD=null,famTimer=null,famBusy=false,famErr="",lastSeen=parseInt(localStorage.getItem("ag_seen")||"0",10),famOpen=false;
 var SH=["exp","budgets","goals","shop","tasks","rem","meds","visits","records","mem","notes","emerg","anni"];
 function fam(){try{return JSON.parse(localStorage.getItem(FAMK))||null}catch(e){return null}}
 function famSet(o){if(o)localStorage.setItem(FAMK,JSON.stringify(o));else localStorage.removeItem(FAMK)}
@@ -316,7 +316,7 @@ function showCode(c){return c.slice(0,4)+"-"+c.slice(4,8)+"-"+c.slice(8)}
 function ownerTok(){if(window.AndroidBridge){var a=JSON.parse(AndroidBridge.getAuth()||"{}");if(!a.refresh)return Promise.resolve(null);return rest("POST","https://securetoken.googleapis.com/v1/token?key="+FKEY,"grant_type=refresh_token&refresh_token="+encodeURIComponent(a.refresh),"","application/x-www-form-urlencoded").then(function(r){if(r.code>=400){window.__tokErr="auth "+r.code;return null}var j=JSON.parse(r.body);AndroidBridge.setRefresh(j.refresh_token||a.refresh);return{token:j.id_token,uid:j.user_id}})}
  return window.agToken?window.agToken():Promise.resolve(null)}
 function famCreate(famName,myName){return ownerTok().then(function(t){if(!t)throw new Error(t_("need_signin")+(window.__tokErr?" ("+window.__tokErr+")":""));var code=code12(),mid="u"+id(),members={};members[mid]={n:myName,ts:Date.now(),r:0};
- var doc={writes:[{update:{name:DBN+"/deals/"+fid(code),fields:{owner:{stringValue:t.uid},kind:{stringValue:"family"},client:fsEnc({name:famName,msgs:{},members:members,home:""})}}}]};
+ var doc={writes:[{update:{name:DBN+"/deals/"+fid(code),fields:{owner:{stringValue:t.uid},kind:{stringValue:"family"},client:fsEnc({name:famName,msgs:{},members:members,home:"",shards:NSH,used:0})}}}].concat(shardWrites(code,t.uid))};
  return rest("POST",CMT+"?key="+FKEY,JSON.stringify(doc),t.token).then(function(r){if(r.code>=400)throw new Error("HTTP "+r.code+" "+r.body.slice(0,100));famSet({code:code,name:famName,me:myName,mid:mid});return code})})}
 function famJoin(code,myName){code=code.replace(/[^A-Za-z0-9]/g,"").toUpperCase();if(code.length!==12)return Promise.reject(new Error(t_("bad_code")));
  return famGet(fid(code)).then(function(d){if(d.missing)throw new Error(t_("bad_code"));var mid="u"+id();return famPatch(fid(code),[[["members",mid],{n:myName,ts:Date.now(),r:0}]]).then(function(){famSet({code:code,name:d.client.name||"Family",me:myName,mid:mid})})})}
@@ -325,16 +325,16 @@ function famMsgs(){return FAMD&&FAMD.msgs?Object.keys(FAMD.msgs).map(function(k)
 function unread(){var f=fam();if(!f)return 0;return famMsgs().filter(function(m){return m.u!==f.mid&&m.ts>lastSeen}).length}
 function famPoll(){var f=fam();if(!f||famBusy)return Promise.resolve();famBusy=true;
  return famGet(fid(f.code)).then(function(d){famBusy=false;famErr="";if(d.missing){famErr=t("fam_gone");return}
-  var prev=famMsgs().length;FAMD=d.client;
+  var prev=famMsgs().length;FAMD=d.client;FAMO=d.owner;
   if(d.client.name&&d.client.name!==f.name){f.name=d.client.name;famSet(f)}
   var ms=famMsgs();
   if(tab===1&&!document.hidden){var mx=ms.length?ms[ms.length-1].ts:0;if(mx>lastSeen){lastSeen=mx;localStorage.setItem("ag_seen",String(mx));famPatch(fid(f.code),[[["members",f.mid,"r"],mx]]).catch(function(){})}}
   else if(ms.length>prev&&prev>0){var nw=ms.filter(function(m){return m.u!==f.mid&&m.ts>lastSeen});if(nw.length&&window.AndroidBridge&&AndroidBridge.notifyNow)AndroidBridge.notifyNow(nw[nw.length-1].n+" • "+t("app"),nw[nw.length-1].t||"📷")}
-  pruneFam(f);
+  pruneFam(f);if(FAMD&&!FAMD.shards)ensureShards();
   if(S.settings.share!==false&&d.client.home)mergeHome(d.client.home);
   if(tab===1&&document.getElementById("msgs"))drawMsgs();updBadge();
  }).catch(function(e){famBusy=false;famErr=e.message})}
-function pruneFam(f){var s=JSON.stringify(FAMD).length;if(s<800000)return;var ms=famMsgs(),del=[];for(var i=0;i<ms.length&&s>650000;i++){s-=JSON.stringify(ms[i]).length;del.push([["msgs",ms[i].id],undefined])}if(del.length)famPatch(fid(f.code),del).catch(function(){})}
+function pruneFam(f){var s=JSON.stringify(FAMD).length;if(s<800000)return;var ms=famMsgs(),del=[];for(var i=0;i<ms.length&&s>650000;i++){s-=JSON.stringify(ms[i]).length;del.push([["msgs",ms[i].id],undefined]);if(ms[i].k==="file")delFileChunks(ms[i])}if(del.length)famPatch(fid(f.code),del).catch(function(){})}
 function updBadge(){var b=document.getElementById("cbadge");if(!b)return;var n=unread();b.textContent=n>99?"99+":n;b.style.display=n&&tab!==1?"inline-block":"none"}
 function famStart(){clearInterval(famTimer);if(!fam())return;famPoll();famTimer=setInterval(function(){if(document.hidden)return;famPoll()},tab===1?3000:12000)}
 function ids(){var o={};SH.forEach(function(k){if(Array.isArray(S[k]))S[k].forEach(function(x){if(x.id)o[x.id]=1})});return o}
@@ -360,8 +360,45 @@ var _lastSig="";function drawMsgs(force){var box=document.getElementById("msgs")
  var h="",last="";ms.forEach(function(m){var dl=dayLabel(m.ts);if(dl!==last){h+='<div class="dsep"><span>'+esc(dl)+'</span></div>';last=dl}var me=m.u===f.mid,seen=me&&others.length&&others.every(function(o){return(mem[o].r||0)>=m.ts});
   h+='<div class="mrow '+(me?"me":"")+'"><div class="bub" data-id="'+m.id+'" data-me="'+(me?1:0)+'">'+(me?"":'<div class="who">'+esc(m.n)+'</div>')+msgBody(m,f)+'<div class="mt">'+tm(m.ts)+(me?' <span class="'+(seen?"seen":"")+'">'+(seen?"✓✓":"✓")+'</span>':'')+'</div></div></div>'});
  if(!ms.length)h='<div class="muted" style="text-align:center;margin-top:40px">'+t("chat_empty")+'</div>';box.innerHTML=h;
- wireMsgs(box,f);box.querySelectorAll(".bub").forEach(function(b){b.onclick=function(){if(b.dataset.me==="1"&&confirm(t("sure"))){famPatch(fid(f.code),[[["msgs",b.dataset.id],undefined]]).then(famPoll)}}});
+ wireMsgs(box,f);box.querySelectorAll(".bub").forEach(function(b){b.onclick=function(){if(b.dataset.me==="1"&&confirm(t("sure"))){var mm=FAMD.msgs[b.dataset.id];famPatch(fid(f.code),[[["msgs",b.dataset.id],undefined]]).then(function(){return delFileChunks(mm)}).then(famPoll)}}});
  if(near)box.scrollTop=box.scrollHeight}
+
+
+/* ---- big files: chunks stored in extra shard documents (free, no card) ---- */
+var NSH=20,CH=400000,MAXF=6*1024*1024,MAXTOT=15*1000*1000,FCACHE={};
+T.f_up=["અપલોડ થાય છે…","Uploading…"];T.f_down=["ડાઉનલોડ થાય છે…","Downloading…"];T.f_big=["ફાઇલ બહુ મોટી છે (મહત્તમ 6 MB). મોટી ફાઇલ માટે ક્લાઉડ સ્ટોરેજ જોઈએ.","File too large (max 6 MB). Bigger files need cloud storage."];T.f_full=["ફેમિલીની જગ્યા ભરાઈ ગઈ (11 MB). જૂની ફાઇલ કાઢી નાખો.","Family storage is full (11 MB). Delete old files."];T.f_noshard=["ફેમિલી બનાવનારે એકવાર app ખોલવી પડશે (Google sign in સાથે), પછી મોટી ફાઇલ ચાલશે.","The family creator must open the app once (signed in), then big files will work."];T.f_err=["ફાઇલ મોકલાઈ નહીં: ","Could not send file: "];T.f_open=["ખોલો","Open"];T.f_vid_ok=["વીડિયો/ફાઇલ (6 MB સુધી)","Video / file (up to 6 MB)"];T.f_used=["વપરાયેલી જગ્યા","Storage used"];
+function shardWrites(code,uid){var w=[];for(var i=0;i<NSH;i++)w.push({update:{name:DBN+"/deals/"+fid(code)+"s"+i,fields:{owner:{stringValue:uid},kind:{stringValue:"family-shard"},client:fsEnc({c:{}})}}});return w}
+function ensureShards(){var f=fam();if(!f||!FAMD||FAMD.shards||window.__ens)return Promise.resolve(!!(FAMD&&FAMD.shards));window.__ens=1;
+ return ownerTok().then(function(t){if(!t||!FAMO||t.uid!==FAMO){window.__ens=0;return false}
+  return rest("POST",CMT+"?key="+FKEY,JSON.stringify({writes:shardWrites(f.code,t.uid)}),t.token).then(function(r){if(r.code>=400){window.__ens=0;return false}return famPatch(fid(f.code),[[["shards"],NSH],[["used"],FAMD.used||0]]).then(function(){FAMD.shards=NSH;return true})})}).catch(function(){window.__ens=0;return false})}
+function shardOf(m,i){return m.sh[i]}
+function putChunk(code,m,i,data){var key="c_"+m.fid+"_"+i,body=JSON.stringify({writes:[{update:{name:DBN+"/deals/"+fid(code)+"s"+shardOf(m,i),fields:fsEnc({c:nestObj(key,data)}).mapValue.fields},updateMask:{fieldPaths:["client.c."+key]}}]});
+ var o={};var fl=fsEnc({client:{c:nestObj(key,data)}}).mapValue.fields;body=JSON.stringify({writes:[{update:{name:DBN+"/deals/"+fid(code)+"s"+shardOf(m,i),fields:fl},updateMask:{fieldPaths:["client.c."+key]}}]});
+ return rest("POST",CMT+"?key="+FKEY,body).then(function(r){if(r.code>=400)throw new Error("HTTP "+r.code)})}
+function nestObj(k,v){var o={};o[k]=v;return o}
+function getChunks(code,m){var need={};for(var i=0;i<m.nc;i++)need[shardOf(m,i)]=1;var ks=Object.keys(need),out={};
+ return Promise.all(ks.map(function(s){return rest("GET",FP+fid(code)+"s"+s+"?key="+FKEY).then(function(r){if(r.code!==200)throw new Error("HTTP "+r.code);var d=JSON.parse(r.body).fields||{};var c=fsDec(d.client);Object.assign(out,(c&&c.c)||{})})})).then(function(){var s="";for(var i=0;i<m.nc;i++){var p=out["c_"+m.fid+"_"+i];if(p==null)throw new Error("missing part "+i);s+=p}return s})}
+function progress(txt){var o=document.getElementById("fprog");if(!o){o=document.createElement("div");o.id="fprog";o.className="fprog";document.body.appendChild(o)}if(txt===null){o.remove();return}o.textContent=txt}
+function sendBigFile(send,file,kind){if(file.size>MAXF){alert(t("f_big"));return}
+ var f=fam();if(!f)return;
+ var go=function(){if((FAMD.used||0)+file.size*1.4>MAXTOT){alert(t("f_full"));return}
+  progress(t("f_up")+" 0%");readB64(file,function(d){var fidn="f"+id(),nc=Math.ceil(d.length/CH),su=Object.assign({},FAMD.su||{}),sh=[];for(var q=0;q<nc;q++){var best=-1,bu=1e9,L=Math.min(CH,d.length-q*CH);for(var z=0;z<NSH;z++){var u=su[z]||0;if(u+L<=880000&&u<bu){bu=u;best=z}}if(best<0){alert(t('f_full'));progress(null);return}su[best]=(su[best]||0)+L;sh.push(best)}var m0={fid:fidn,sh:sh,nc:nc},i=0;
+   function nxt(){if(i>=nc){var sets=[[["used"],(FAMD.used||0)+d.length]];Object.keys(su).forEach(function(z){sets.push([["su",z],su[z]])});return famPatch(fid(f.code),sets).then(function(){FAMD.used=(FAMD.used||0)+d.length;FAMD.su=su;progress(null);send({k:"file",fid:fidn,sh:sh,nc:nc,fn:file.name,ty:file.type||"application/octet-stream",sz:file.size,ds:d.length})})}
+    return putChunk(f.code,m0,i,d.slice(i*CH,(i+1)*CH)).then(function(){i++;progress(t("f_up")+" "+Math.round(i*100/nc)+"%");return nxt()})}
+   nxt().catch(function(e){progress(null);alert(t("f_err")+e.message)})})};
+ if(FAMD&&FAMD.shards)go();else ensureShards().then(function(ok){if(ok)go();else alert(t("f_noshard"))})}
+function fileSets(m){var s=[];for(var i=0;i<m.nc;i++)s.push([["__shard",shardOf(m,i),"c_"+m.fid+"_"+i],undefined]);return s}
+function delFileChunks(m){var f=fam();if(!f||!m||m.k!=="file")return Promise.resolve();var by={};for(var i=0;i<m.nc;i++){(by[shardOf(m,i)]=by[shardOf(m,i)]||[]).push("client.c.c_"+m.fid+"_"+i)}
+ var w=Object.keys(by).map(function(s){return{update:{name:DBN+"/deals/"+fid(f.code)+"s"+s,fields:{}},updateMask:{fieldPaths:by[s]}}});
+ return rest("POST",CMT+"?key="+FKEY,JSON.stringify({writes:w})).then(function(){var sets=[[["used"],Math.max(0,(FAMD.used||0)-(m.ds||0))]];var su=Object.assign({},FAMD.su||{});for(var i=0;i<m.nc;i++){var L=Math.min(CH,(m.ds||0)-i*CH);su[m.sh[i]]=Math.max(0,(su[m.sh[i]]||0)-L)}Object.keys(su).forEach(function(z){sets.push([["su",z],su[z]])});return famPatch(fid(f.code),sets)}).catch(function(){})}
+function dataToBlobUrl(d){var p=d.split(","),mime=(p[0].match(/:(.*?);/)||[])[1]||"application/octet-stream",bin=atob(p[1]),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return URL.createObjectURL(new Blob([a],{type:mime}))}
+function openBigFile(m){var f=fam();var run=function(d){var ty=m.ty||"";var pv="";var url=null;
+  if(!window.AndroidBridge){url=dataToBlobUrl(d)}
+  if(/^audio\//.test(ty))pv='<audio controls autoplay src="'+(url||d)+'" style="width:100%"></audio>';else if(/^video\//.test(ty))pv='<video controls autoplay playsinline src="'+(url||d)+'" style="width:100%;border-radius:12px"></video>';else if(/^image\//.test(ty))pv='<img src="'+(url||d)+'" style="max-width:100%;border-radius:12px">';
+  var o=overlay('<div class="big">'+esc(m.fn)+'</div><div class="muted">'+fmtSz(m.sz||0)+'</div>'+pv+'<button class="btn" id="fs">⬇ '+t("v_save")+'</button><button class="btn g" id="fh">↗ '+t("v_share")+'</button>');
+  var sv=function(){if(window.AndroidBridge&&AndroidBridge.saveB64)AndroidBridge.saveB64(m.fn,d.split(",")[1]||"",ty||"application/octet-stream");else{var a=document.createElement("a");a.href=url;a.download=m.fn;document.body.appendChild(a);a.click();a.remove()}};
+  o.querySelector("#fs").onclick=sv;o.querySelector("#fh").onclick=function(){if(window.AndroidBridge)sv();else fetch(url).then(function(r){return r.blob()}).then(function(b){var fl=new File([b],m.fn,{type:ty});if(navigator.canShare&&navigator.canShare({files:[fl]}))navigator.share({files:[fl]}).catch(function(){});else sv()})}};
+ if(FCACHE[m.fid])return run(FCACHE[m.fid]);progress(t("f_down"));getChunks(f.code,m).then(function(d){progress(null);if(Object.keys(FCACHE).length>3)FCACHE={};FCACHE[m.fid]=d;run(d)}).catch(function(e){progress(null);alert(t("f_err")+e.message)})}
 
 /* ---- attachments (WhatsApp-style sheet) ---- */
 var AT_T={at_doc:["દસ્તાવેજ","Document"],at_photo:["ફોટા અને વીડિયો","Photos & videos"],at_cam:["કૅમેરા","Camera"],at_aud:["ઑડિયો","Audio"],at_con:["સંપર્ક","Contact"],at_poll:["પોલ","Poll"],at_evt:["ઇવેન્ટ","Event"],at_stk:["સ્ટિકર","Sticker"],too_big:["આ બહુ મોટું છે (સીમા ~500 KB). નાની ફાઇલ/ઓછા ફોટા મોકલો.","Too big (limit ~500 KB). Send a smaller file or fewer photos."],
@@ -374,10 +411,10 @@ function overlay(html){var o=document.createElement("div");o.className="sheetov"
  o.addEventListener("click",function(e){if(e.target===o)o.remove()});var y0=null;sh.addEventListener("touchstart",function(e){y0=e.touches[0].clientY},{passive:true});sh.addEventListener("touchend",function(e){if(y0!==null&&e.changedTouches[0].clientY-y0>70)o.remove();y0=null});return o}
 function attachSheet(send){var items=[["📄","at_doc"],["🖼️","at_photo"],["📷","at_cam"],["🎧","at_aud"],["👤","at_con"],["📊","at_poll"],["📅","at_evt"],["😀","at_stk"]];var h='<div class="big">📎</div><div class="agrid">';items.forEach(function(x){h+='<button class="aitem" data-k="'+x[1]+'"><span>'+x[0]+'</span>'+t(x[1])+'</button>'});h+='</div>';var o=overlay(h);
  o.querySelectorAll(".aitem").forEach(function(b){b.onclick=function(){var k=b.dataset.k;o.remove();({at_doc:aDoc,at_photo:aPhoto,at_cam:aCam,at_aud:aAud,at_con:aCon,at_poll:aPoll,at_evt:aEvt,at_stk:aStk})[k](send)}})}
-function aPhoto(send){pickFiles("image/*,video/*",true,false,function(fl){var imgs=fl.filter(function(x){return /^image\//.test(x.type)}),vids=fl.length-imgs.length;if(vids&&!imgs.length){alert(t("video_no"));return}if(vids)alert(t("video_no"));var out=[],n=0;imgs.slice(0,10).forEach(function(x,i){shrink2(x,function(d){out[i]=d;if(++n===Math.min(imgs.length,10))send({k:"img",is:out})})})})}
+function aPhoto(send){pickFiles("image/*,video/*",true,false,function(fl){var imgs=fl.filter(function(x){return /^image\//.test(x.type)}),vids=fl.filter(function(x){return /^video\//.test(x.type)});vids.forEach(function(v){sendBigFile(send,v)});if(!imgs.length)return;var out=[],n=0,L=imgs.slice(0,10);L.forEach(function(x,i){shrink2(x,function(d){out[i]=d;if(++n===L.length)send({k:"img",is:out})})})})}
 function aCam(send){pickFiles("image/*",false,true,function(fl){shrink2(fl[0],function(d){send({k:"img",is:[d]})})})}
-function aDoc(send){pickFiles("*/*",false,false,function(fl){var x=fl[0];if(x.size>480000){alert(t("too_big"));return}readB64(x,function(d){send({k:"doc",fn:x.name,ty:x.type,d:d,sz:x.size})})})}
-function aAud(send){pickFiles("audio/*",false,false,function(fl){var x=fl[0];if(x.size>480000){alert(t("too_big"));return}readB64(x,function(d){send({k:"aud",fn:x.name,d:d,sz:x.size})})})}
+function aDoc(send){pickFiles("*/*",false,false,function(fl){var x=fl[0];if(x.size>480000){sendBigFile(send,x);return}readB64(x,function(d){send({k:"doc",fn:x.name,ty:x.type,d:d,sz:x.size})})})}
+function aAud(send){pickFiles("audio/*",false,false,function(fl){var x=fl[0];if(x.size>480000){sendBigFile(send,x);return}readB64(x,function(d){send({k:"aud",fn:x.name,d:d,sz:x.size})})})}
 function aCon(send){var o=overlay('<div class="big">👤 '+t("at_con")+'</div><input id="cn" placeholder="'+t("name")+'"><input id="cp" type="tel" placeholder="'+t("phone")+'"><button class="btn" id="go">'+t("send")+'</button>');o.querySelector("#go").onclick=function(){var n=o.querySelector("#cn").value.trim(),p=o.querySelector("#cp").value.trim();if(!n||!p)return;o.remove();send({k:"con",cn:n,cp:p})}}
 function aPoll(send){var o=overlay('<div class="big">📊 '+t("at_poll")+'</div><input id="pq" placeholder="'+t("q")+'"><div id="po"><input class="po" placeholder="'+t("opt")+' 1"><input class="po" placeholder="'+t("opt")+' 2"></div><button class="btn g" id="ao">'+t("add_opt")+'</button><button class="btn" id="go">'+t("send")+'</button>');var c=2;o.querySelector("#ao").onclick=function(){if(c>=8)return;c++;var i=document.createElement("input");i.className="po";i.placeholder=t("opt")+" "+c;o.querySelector("#po").appendChild(i)};
  o.querySelector("#go").onclick=function(){var q=o.querySelector("#pq").value.trim(),op=Array.prototype.map.call(o.querySelectorAll(".po"),function(x){return x.value.trim()}).filter(Boolean);if(!q||op.length<2)return;o.remove();send({k:"poll",q:q,o:op})}}
@@ -413,6 +450,7 @@ function msgBody(m,f){var h="";
  if(m.i)h+='<img class="mimg zoom" data-s="'+m.id+'_x" src="'+m.i+'">';
  if(m.k==="img"&&m.is){h+='<div class="mgal g'+Math.min(m.is.length,4)+'">'+m.is.map(function(s,i){return'<img class="mimg zoom" loading="lazy" decoding="async" data-s="'+m.id+'_'+i+'" src="'+s+'">'}).join("")+'</div>'}
  else if(m.k==="doc")h+='<div class="fcard">📄 <b>'+esc(m.fn)+'</b><div class="muted">'+fmtSz(m.sz||0)+'</div><a class="dlk" data-id="'+m.id+'" href="#">'+t("dl")+'</a></div>';
+ else if(m.k==="file"){var ic=/^video\//.test(m.ty)?"🎬":/^audio\//.test(m.ty)?"🎧":/^image\//.test(m.ty)?"🖼️":/pdf/.test(m.ty)?"📕":"📄";h+='<div class="fcard">'+ic+' <b>'+esc(m.fn)+'</b><div class="muted">'+fmtSz(m.sz||0)+'</div><a class="bigk" data-id="'+m.id+'" href="#">'+t("f_open")+' / '+t("v_save")+'</a></div>'}
  else if(m.k==="aud")h+='<div class="fcard">🎧 <b>'+esc(m.fn)+'</b><audio controls preload="none" src="'+m.d+'" style="width:100%;margin-top:4px"></audio></div>';
  else if(m.k==="con")h+='<div class="fcard">👤 <b>'+esc(m.cn)+'</b><div>'+esc(m.cp)+'</div><a href="tel:'+esc(m.cp.replace(/[^+\d]/g,""))+'">📞</a></div>';
  else if(m.k==="evt")h+='<div class="fcard">📅 <b>'+esc(m.et)+'</b><div>'+dstr(m.ed)+' '+esc(m.etm||"")+'</div>'+(m.u!==f.mid?'<a class="evk" data-id="'+m.id+'" href="#">'+t("add_cal")+'</a>':'')+'</div>';
@@ -422,6 +460,7 @@ function msgBody(m,f){var h="";
 function wireMsgs(box,f){
  box.querySelectorAll(".zoom").forEach(function(im){im.onclick=function(e){e.stopPropagation();openViewer(im.dataset.s)}});
  box.querySelectorAll(".dlk").forEach(function(a){a.onclick=function(e){e.preventDefault();e.stopPropagation();var m=FAMD.msgs[a.dataset.id];if(!m)return;if(window.AndroidBridge&&AndroidBridge.saveB64){AndroidBridge.saveB64(m.fn,m.d.split(",")[1]||"",m.ty||"application/octet-stream")}else{var l=document.createElement("a");l.href=m.d;l.download=m.fn;document.body.appendChild(l);l.click();l.remove()}}});
+ box.querySelectorAll(".bigk").forEach(function(a){a.onclick=function(e){e.preventDefault();e.stopPropagation();var m=FAMD.msgs[a.dataset.id];if(m)openBigFile(m)}});
  box.querySelectorAll(".evk").forEach(function(a){a.onclick=function(e){e.preventDefault();e.stopPropagation();var m=FAMD.msgs[a.dataset.id];if(!m)return;S.rem.push({id:id(),title:m.et,kind:"other",date:m.ed,time:m.etm||"09:00",repeat:"none"});save();a.textContent=t("added")}});
  box.querySelectorAll(".popt").forEach(function(p){p.onclick=function(e){e.stopPropagation();famPatch(fid(f.code),[[["msgs",p.dataset.id,"votes",f.mid],parseInt(p.dataset.i,10)]]).then(famPoll)}})}
 
@@ -452,7 +491,7 @@ function sFam(m){var f=fam();
  var link="https://1darshankumarsavsani-blip.github.io/Amaru-Ghar/?join="+f.code,msg=(gu?"સાવસાણી ફેમિલી app માં જોડાઓ. કોડ: ":"Join our family app. Code: ")+showCode(f.code)+"\n"+link;
  c.querySelector("#inv").onclick=function(){location.href="https://wa.me/?text="+encodeURIComponent(msg)};
  c.querySelector("#cp").onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(msg).then(function(){alert("✓")});else prompt("",msg)};m.appendChild(c);
- var ml=el('<div class="card"><div class="big">'+t("fam_members")+'</div></div>');Object.keys(mem).forEach(function(k){ml.appendChild(el('<div class="row" style="margin-top:8px"><div class="av s">'+esc((mem[k].n||"?")[0])+'</div><span class="grow">'+esc(mem[k].n)+(k===f.mid?' <span class="pill">'+t("me")+'</span>':'')+'</span></div>'))});m.appendChild(ml);
+ var ul=el('<div class="card"><div class="muted">'+t("f_used")+': '+fmtSz(Math.round(((FAMD&&FAMD.used)||0)*0.75))+' / 11 MB</div><div class="bar"><i style="width:'+Math.min(100,Math.round((((FAMD&&FAMD.used)||0)*100)/MAXTOT))+'%"></i></div></div>');m.appendChild(ul);var ml=el('<div class="card"><div class="big">'+t("fam_members")+'</div></div>');Object.keys(mem).forEach(function(k){ml.appendChild(el('<div class="row" style="margin-top:8px"><div class="av s">'+esc((mem[k].n||"?")[0])+'</div><span class="grow">'+esc(mem[k].n)+(k===f.mid?' <span class="pill">'+t("me")+'</span>':'')+'</span></div>'))});m.appendChild(ml);
  var sh=el('<div class="card"><label class="chk"><input type="checkbox" '+(S.settings.share===false?"":"checked")+'> '+t("fam_share")+'</label><div class="muted">'+t("fam_share_hint")+'</div></div>');
  sh.querySelector("input").onchange=function(){S.settings.share=this.checked;save()};m.appendChild(sh);
  var lv=el('<button class="btn g" style="color:var(--bad)">'+t("fam_leave")+'</button>');lv.onclick=function(){if(ask()){famSet(null);FAMD=null;clearInterval(famTimer);sub=null;tab=1;render()}};m.appendChild(lv);
