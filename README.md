@@ -1,12 +1,12 @@
-# Amaru Ghar (અમારું ઘર), Our Home
+# Savsani Family (સાવસાણી ફેમિલી)
 
-A private family app for a couple: home expenses and budgets, savings dreams, shopping and chore lists, reminders (bills, EMI, insurance, vehicle, birthdays, anniversary), medicines and health records, a document vault, memories, love notes and an emergency card. Gujarati and English, works online and offline.
+A private family app (earlier called "Amaru Ghar / Our Home") with a WhatsApp-style family chat: home expenses and budgets, savings dreams, shopping and chore lists, reminders (bills, EMI, insurance, vehicle, birthdays, anniversary), medicines and health records, a document vault, memories, love notes and an emergency card. Gujarati and English, works online and offline.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) ![Languages: Gujarati + English](https://img.shields.io/badge/languages-Gujarati%20%2B%20English-blue)
 
 **Live demo (phone and PC, no install):** https://1darshankumarsavsani-blip.github.io/Amaru-Ghar/
 
-## Features (V1)
+## Features (V2)
 
 - Home expenses with categories, monthly budgets with an 80% warning, savings and dream goals with progress bars
 - Shopping and grocery list, chores (me / wife / both)
@@ -15,12 +15,13 @@ A private family app for a couple: home expenses and budgets, savings dreams, sh
 - Vault and memories for documents and photos (kept on the device only)
 - Anniversary countdown, love-note cards, emergency card with tap-to-call numbers
 - Android: two home-screen widgets (Today and Shopping list), reminder notifications, fingerprint unlock, Google sync
-- Themes, dark mode, text size, bold and high contrast; PIN lock; backup and restore; CSV and PDF reports
+- Family chat like WhatsApp: create a family, invite with a code, live messages, photos, seen ticks; expenses, lists, reminders and notes are shared between everyone in the family
+- Glass theme, dark mode with the dark logo, colours, text size, bold and high contrast; PIN lock; backup and restore; CSV and PDF reports
 
 ## Download (latest release)
 
-- `Amaru_Ghar_V1.apk`: Android app (the whole app is inside, works offline)
-- `Amaru_Ghar_Windows.exe`: Windows launcher (opens the website in its own window; Edge or Chrome needed)
+- `Savsani_Family_V2.apk`: Android app (the whole app is inside, works offline)
+- `Savsani_Family_Windows.exe`: Windows launcher (opens the website in its own window; Edge or Chrome needed)
 
 See the [Releases page](../../releases/latest).
 
@@ -45,11 +46,11 @@ Open `app/` in Android Studio, or run `./gradlew testDebugUnitTest` and `./gradl
 
 ## Privacy
 
-Everything stays on your device. Documents and photos never leave the device. Only if you sign in with Google does the text data sync to your own Google account's document.
+Documents and vault photos stay on your device. Family chat and shared lists are stored in the family's Firebase document, readable by anyone who has the family code. Signing in with Google also syncs your own data between your own devices.
 
 ## Honest notes
 
-Tested in a headless browser and on a simulated Android 14 phone only. Widgets, reminders, fingerprint and Google sign-in have not been run on a real phone yet. The live link with a wife's phone (shared data) is planned for V2.
+Tested in a headless browser and on a simulated Android 14 phone only. Widgets, reminders, fingerprint and Google sign-in have not been run on a real phone yet. The family chat has only been tested with two simulated browsers, not on two real phones. Chat messages are fetched every few seconds (no push notifications while the app is closed). Anyone who has the family code can join, so share the code only with family.
 
 ## License
 
