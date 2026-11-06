@@ -53,6 +53,9 @@ body.glass .btn.g{background:rgba(255,255,255,.35);color:var(--ink)}
 body.glass nav button.on{box-shadow:0 4px 14px rgba(124,77,255,.35)}
 .langov{position:fixed;inset:0;background:#000a;z-index:200;overflow:auto;padding:10px}
 [dir=rtl] .bub,[dir=rtl] .row{direction:rtl}
+.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.aitem{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 2px;font-size:11px;color:var(--ink)}.aitem span{display:block;font-size:26px}
+.mgal{display:grid;gap:3px;grid-template-columns:1fr 1fr}.mgal.g1{grid-template-columns:1fr}.mgal img{width:100%;height:120px;object-fit:cover;border-radius:8px;margin:0}.mgal.g1 img{height:auto;max-height:300px}
+.fcard{background:#0001;border-radius:10px;padding:8px;margin-bottom:3px}.fcard a{color:inherit;font-weight:700}.popt{margin-top:8px;cursor:pointer}.clip{background:none;border:0}
 </style></head><body><header><img src="icon.png" alt=""><h1 id="ttl"></h1><button id="lang"></button></header><main id="m"></main><nav id="nav"></nav><div id="lock"></div><script>
 var famHook=function(){};var famHook=function(){};var LS="amaru_ghar_v1",gu=true,tab=0,sub=null,S,user=null,push=function(){};
 var T={
@@ -341,10 +344,46 @@ function dayLabel(ts){var d=new Date(ts),n=new Date(),y=new Date();y.setDate(n.g
 function members(){return FAMD&&FAMD.members?FAMD.members:{}}
 function drawMsgs(){var box=document.getElementById("msgs");if(!box)return;var f=fam(),ms=famMsgs(),near=box.scrollHeight-box.scrollTop-box.clientHeight<120||!box.firstChild;var mem=members(),others=Object.keys(mem).filter(function(k){return k!==f.mid});
  var h="",last="";ms.forEach(function(m){var dl=dayLabel(m.ts);if(dl!==last){h+='<div class="dsep"><span>'+esc(dl)+'</span></div>';last=dl}var me=m.u===f.mid,seen=me&&others.length&&others.every(function(o){return(mem[o].r||0)>=m.ts});
-  h+='<div class="mrow '+(me?"me":"")+'"><div class="bub" data-id="'+m.id+'" data-me="'+(me?1:0)+'">'+(me?"":'<div class="who">'+esc(m.n)+'</div>')+(m.i?'<img class="mimg" src="'+m.i+'">':'')+(m.t?'<div class="tx">'+esc(m.t)+'</div>':'')+'<div class="mt">'+tm(m.ts)+(me?' <span class="'+(seen?"seen":"")+'">'+(seen?"✓✓":"✓")+'</span>':'')+'</div></div></div>'});
+  h+='<div class="mrow '+(me?"me":"")+'"><div class="bub" data-id="'+m.id+'" data-me="'+(me?1:0)+'">'+(me?"":'<div class="who">'+esc(m.n)+'</div>')+msgBody(m,f)+'<div class="mt">'+tm(m.ts)+(me?' <span class="'+(seen?"seen":"")+'">'+(seen?"✓✓":"✓")+'</span>':'')+'</div></div></div>'});
  if(!ms.length)h='<div class="muted" style="text-align:center;margin-top:40px">'+t("chat_empty")+'</div>';box.innerHTML=h;
- box.querySelectorAll(".bub").forEach(function(b){b.onclick=function(){if(b.dataset.me==="1"&&confirm(t("sure"))){famPatch(fid(f.code),[[["msgs",b.dataset.id],undefined]]).then(famPoll)}}});
+ wireMsgs(box,f);box.querySelectorAll(".bub").forEach(function(b){b.onclick=function(){if(b.dataset.me==="1"&&confirm(t("sure"))){famPatch(fid(f.code),[[["msgs",b.dataset.id],undefined]]).then(famPoll)}}});
  if(near)box.scrollTop=box.scrollHeight}
+
+/* ---- attachments (WhatsApp-style sheet) ---- */
+var AT_T={at_doc:["દસ્તાવેજ","Document"],at_photo:["ફોટા અને વીડિયો","Photos & videos"],at_cam:["કૅમેરા","Camera"],at_aud:["ઑડિયો","Audio"],at_con:["સંપર્ક","Contact"],at_poll:["પોલ","Poll"],at_evt:["ઇવેન્ટ","Event"],at_stk:["સ્ટિકર","Sticker"],too_big:["આ બહુ મોટું છે (સીમા ~500 KB). નાની ફાઇલ/ઓછા ફોટા મોકલો.","Too big (limit ~500 KB). Send a smaller file or fewer photos."],
+ q:["પ્રશ્ન","Question"],opt:["વિકલ્પ","Option"],add_opt:["+ વિકલ્પ","+ Option"],send:["મોકલો","Send"],phone:["ફોન નંબર","Phone number"],etitle:["ઇવેન્ટનું નામ","Event title"],votes:["મત","votes"],add_cal:["રિમાઇન્ડરમાં ઉમેરો","Add to reminders"],added:["ઉમેરાયું ✓","Added ✓"],dl:["ડાઉનલોડ / ખોલો","Download / open"],video_no:["વીડિયો બહુ મોટા હોય છે, અહીં નહીં મોકલાય. ફોટા, દસ્તાવેજ, ઑડિયો મોકલો.","Videos are too large to send here. Photos, documents and audio work."],ph_hint:["એકથી વધુ ફોટા પસંદ કરી શકો","You can select several photos"]};
+Object.keys(AT_T).forEach(function(k){T[k]=AT_T[k]});
+function readB64(file,cb){var r=new FileReader();r.onload=function(){cb(r.result)};r.readAsDataURL(file)}
+function pickFiles(accept,multi,capture,cb){var i=document.createElement("input");i.type="file";i.accept=accept;if(multi)i.multiple=true;if(capture)i.setAttribute("capture","environment");i.style.display="none";document.body.appendChild(i);i.onchange=function(){var fl=Array.prototype.slice.call(i.files||[]);i.remove();if(fl.length)cb(fl)};i.click()}
+function overlay(html){var o=document.createElement("div");o.className="langov";o.innerHTML='<div class="card" style="max-width:420px;margin:40px auto">'+html+'</div>';document.body.appendChild(o);o.addEventListener("click",function(e){if(e.target===o)o.remove()});return o}
+function attachSheet(send){var items=[["📄","at_doc"],["🖼️","at_photo"],["📷","at_cam"],["🎧","at_aud"],["👤","at_con"],["📊","at_poll"],["📅","at_evt"],["😀","at_stk"]];var h='<div class="big">📎</div><div class="agrid">';items.forEach(function(x){h+='<button class="aitem" data-k="'+x[1]+'"><span>'+x[0]+'</span>'+t(x[1])+'</button>'});h+='</div>';var o=overlay(h);
+ o.querySelectorAll(".aitem").forEach(function(b){b.onclick=function(){var k=b.dataset.k;o.remove();({at_doc:aDoc,at_photo:aPhoto,at_cam:aCam,at_aud:aAud,at_con:aCon,at_poll:aPoll,at_evt:aEvt,at_stk:aStk})[k](send)}})}
+function aPhoto(send){pickFiles("image/*,video/*",true,false,function(fl){var imgs=fl.filter(function(x){return /^image\//.test(x.type)}),vids=fl.length-imgs.length;if(vids&&!imgs.length){alert(t("video_no"));return}if(vids)alert(t("video_no"));var out=[],n=0;imgs.slice(0,10).forEach(function(x,i){shrink2(x,function(d){out[i]=d;if(++n===Math.min(imgs.length,10))send({k:"img",is:out})})})})}
+function aCam(send){pickFiles("image/*",false,true,function(fl){shrink2(fl[0],function(d){send({k:"img",is:[d]})})})}
+function aDoc(send){pickFiles("*/*",false,false,function(fl){var x=fl[0];if(x.size>480000){alert(t("too_big"));return}readB64(x,function(d){send({k:"doc",fn:x.name,ty:x.type,d:d,sz:x.size})})})}
+function aAud(send){pickFiles("audio/*",false,false,function(fl){var x=fl[0];if(x.size>480000){alert(t("too_big"));return}readB64(x,function(d){send({k:"aud",fn:x.name,d:d,sz:x.size})})})}
+function aCon(send){var o=overlay('<div class="big">👤 '+t("at_con")+'</div><input id="cn" placeholder="'+t("name")+'"><input id="cp" type="tel" placeholder="'+t("phone")+'"><button class="btn" id="go">'+t("send")+'</button>');o.querySelector("#go").onclick=function(){var n=o.querySelector("#cn").value.trim(),p=o.querySelector("#cp").value.trim();if(!n||!p)return;o.remove();send({k:"con",cn:n,cp:p})}}
+function aPoll(send){var o=overlay('<div class="big">📊 '+t("at_poll")+'</div><input id="pq" placeholder="'+t("q")+'"><div id="po"><input class="po" placeholder="'+t("opt")+' 1"><input class="po" placeholder="'+t("opt")+' 2"></div><button class="btn g" id="ao">'+t("add_opt")+'</button><button class="btn" id="go">'+t("send")+'</button>');var c=2;o.querySelector("#ao").onclick=function(){if(c>=8)return;c++;var i=document.createElement("input");i.className="po";i.placeholder=t("opt")+" "+c;o.querySelector("#po").appendChild(i)};
+ o.querySelector("#go").onclick=function(){var q=o.querySelector("#pq").value.trim(),op=Array.prototype.map.call(o.querySelectorAll(".po"),function(x){return x.value.trim()}).filter(Boolean);if(!q||op.length<2)return;o.remove();send({k:"poll",q:q,o:op})}}
+function aEvt(send){var o=overlay('<div class="big">📅 '+t("at_evt")+'</div><input id="et" placeholder="'+t("etitle")+'"><input id="ed" type="date" value="'+dkey()+'"><input id="etm" type="time" value="09:00"><button class="btn" id="go">'+t("send")+'</button>');o.querySelector("#go").onclick=function(){var ti=o.querySelector("#et").value.trim(),d=o.querySelector("#ed").value;if(!ti||!d)return;var tmv=o.querySelector("#etm").value||"09:00";o.remove();var eid=id();S.rem.push({id:eid,title:ti,kind:"other",date:d,time:tmv,repeat:"none"});save();send({k:"evt",et:ti,ed:d,etm:tmv})}}
+function aStk(send){var E="😀😂😍🥰😘😎🤩😭😡👍🙏👏🔥🎉❤️💯😴🤗🥳😅🤝💪🎂🍕☕🏠🚗✅❌🙌".match(/(\p{Extended_Pictographic}\uFE0F?(\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu);var h='<div class="big">😀 '+t("at_stk")+'</div><div class="agrid">';E.forEach(function(e){h+='<button class="aitem stk" data-e="'+e+'" style="font-size:34px">'+e+'</button>'});var o=overlay(h+'</div>');o.querySelectorAll(".stk").forEach(function(b){b.onclick=function(){o.remove();send({k:"stk",e:b.dataset.e})}})}
+function fmtSz(n){return n>1024?(n/1024).toFixed(0)+" KB":n+" B"}
+function msgBody(m,f){var h="";
+ if(m.i)h+='<img class="mimg" src="'+m.i+'">';
+ if(m.k==="img"&&m.is){h+='<div class="mgal g'+Math.min(m.is.length,4)+'">'+m.is.map(function(s,i){return'<img class="mimg zoom" data-s="'+m.id+'_'+i+'" src="'+s+'">'}).join("")+'</div>'}
+ else if(m.k==="doc")h+='<div class="fcard">📄 <b>'+esc(m.fn)+'</b><div class="muted">'+fmtSz(m.sz||0)+'</div><a class="dlk" data-id="'+m.id+'" href="#">'+t("dl")+'</a></div>';
+ else if(m.k==="aud")h+='<div class="fcard">🎧 <b>'+esc(m.fn)+'</b><audio controls preload="none" src="'+m.d+'" style="width:100%;margin-top:4px"></audio></div>';
+ else if(m.k==="con")h+='<div class="fcard">👤 <b>'+esc(m.cn)+'</b><div>'+esc(m.cp)+'</div><a href="tel:'+esc(m.cp.replace(/[^+\d]/g,""))+'">📞</a></div>';
+ else if(m.k==="evt")h+='<div class="fcard">📅 <b>'+esc(m.et)+'</b><div>'+dstr(m.ed)+' '+esc(m.etm||"")+'</div>'+(m.u!==f.mid?'<a class="evk" data-id="'+m.id+'" href="#">'+t("add_cal")+'</a>':'')+'</div>';
+ else if(m.k==="stk")h+='<div style="font-size:64px;line-height:1.1">'+esc(m.e)+'</div>';
+ else if(m.k==="poll"){var v=m.votes||{},tot=Object.keys(v).length,mine=v[f.mid];h+='<div class="fcard">📊 <b>'+esc(m.q)+'</b>'+m.o.map(function(o,i){var c=Object.keys(v).filter(function(x){return v[x]===i}).length,p=tot?Math.round(c*100/tot):0;return'<div class="popt" data-id="'+m.id+'" data-i="'+i+'"><div class="row"><span class="grow">'+(mine===i?"● ":"○ ")+esc(o)+'</span><b>'+c+'</b></div><div class="bar"><i style="width:'+p+'%"></i></div></div>'}).join("")+'<div class="muted">'+tot+' '+t("votes")+'</div></div>'}
+ if(m.t)h+='<div class="tx">'+esc(m.t)+'</div>';return h}
+function wireMsgs(box,f){
+ box.querySelectorAll(".zoom").forEach(function(im){im.onclick=function(e){e.stopPropagation();var o=document.createElement("div");o.className="langov";o.style.display="flex";o.style.alignItems="center";o.style.justifyContent="center";o.innerHTML='<img src="'+im.src+'" style="max-width:100%;max-height:100%">';o.onclick=function(){o.remove()};document.body.appendChild(o)}});
+ box.querySelectorAll(".dlk").forEach(function(a){a.onclick=function(e){e.preventDefault();e.stopPropagation();var m=FAMD.msgs[a.dataset.id];if(!m)return;if(window.AndroidBridge&&AndroidBridge.saveB64){AndroidBridge.saveB64(m.fn,m.d.split(",")[1]||"",m.ty||"application/octet-stream")}else{var l=document.createElement("a");l.href=m.d;l.download=m.fn;document.body.appendChild(l);l.click();l.remove()}}});
+ box.querySelectorAll(".evk").forEach(function(a){a.onclick=function(e){e.preventDefault();e.stopPropagation();var m=FAMD.msgs[a.dataset.id];if(!m)return;S.rem.push({id:id(),title:m.et,kind:"other",date:m.ed,time:m.etm||"09:00",repeat:"none"});save();a.textContent=t("added")}});
+ box.querySelectorAll(".popt").forEach(function(p){p.onclick=function(e){e.stopPropagation();famPatch(fid(f.code),[[["msgs",p.dataset.id,"votes",f.mid],parseInt(p.dataset.i,10)]]).then(famPoll)}})}
+
 function vChat(m){famStart();var f=fam();
  if(!f){m.appendChild(el('<div class="card" style="text-align:center"><div style="font-size:48px">💬</div><div class="big">'+t("fam_title")+'</div><div class="muted">'+t("fam_hint")+'</div></div>'));
   var jn=(location.search.match(/join=([A-Za-z0-9-]+)/)||[])[1]||"";
@@ -358,12 +397,13 @@ function vChat(m){famStart();var f=fam();
  var top=el('<div class="chead"><div class="av">'+esc((f.name||"F")[0])+'</div><div class="grow"><b>'+esc(f.name)+'</b><div class="muted" style="font-size:12px">'+esc(famErr?("⚠ "+famErr):names||"…")+'</div></div><button class="x" style="color:var(--ink)" id="ci">ⓘ</button></div>');
  top.querySelector("#ci").onclick=function(){tab=5;sub="fam";render()};m.appendChild(top);
  m.appendChild(el('<div id="msgs"></div>'));
- var bar=el('<div class="cbar"><label class="clip">📷<input type="file" accept="image/*" id="cf" style="display:none"></label><input id="ct" placeholder="'+t("type_msg")+'" autocomplete="off"><button class="send" id="cs">➤</button></div>');
- function send(o){var msg=Object.assign({u:f.mid,n:f.me,ts:Date.now()},o),k="m"+id();FAMD=FAMD||{msgs:{}};FAMD.msgs=FAMD.msgs||{};FAMD.msgs[k]=msg;drawMsgs();famPatch(fid(f.code),[[["msgs",k],msg]]).then(famPoll).catch(function(e){famErr=e.message;drawMsgs()})}
+ var bar=el('<div class="cbar"><button class="clip" id="cat">📎</button><input id="ct" placeholder="'+t("type_msg")+'" autocomplete="off"><button class="send" id="cs">➤</button></div>');
+ function send(o){var msg=Object.assign({u:f.mid,n:f.me,ts:Date.now()},o),k="m"+id();if(JSON.stringify(msg).length>700000){alert(t("too_big"));return}FAMD=FAMD||{msgs:{}};FAMD.msgs=FAMD.msgs||{};FAMD.msgs[k]=msg;drawMsgs();famPatch(fid(f.code),[[["msgs",k],msg]]).then(famPoll).catch(function(e){famErr=e.message;drawMsgs()})}
+ window.__send=send;
  bar.querySelector("#cs").onclick=function(){var i=bar.querySelector("#ct"),v=i.value.trim();if(!v)return;i.value="";send({t:v})};
  bar.querySelector("#ct").onkeydown=function(e){if(e.key==="Enter")bar.querySelector("#cs").onclick()};
- bar.querySelector("#cf").onchange=function(){var fl=this.files[0];if(fl)shrink2(fl,function(d){send({i:d})})};
- m.appendChild(bar);drawMsgs();if(FAMD){lastSeen=Math.max(lastSeen,famMsgs().length?famMsgs()[famMsgs().length-1].ts:0);localStorage.setItem("ag_seen",String(lastSeen))}
+ bar.querySelector("#cat").onclick=function(){attachSheet(send)};
+m.appendChild(bar);drawMsgs();if(FAMD){lastSeen=Math.max(lastSeen,famMsgs().length?famMsgs()[famMsgs().length-1].ts:0);localStorage.setItem("ag_seen",String(lastSeen))}
  var box=document.getElementById("msgs");if(box)box.scrollTop=box.scrollHeight}
 function sFam(m){var f=fam();
  if(!f){m.appendChild(el('<div class="card muted">'+t("fam_hint")+'</div>'));return}
