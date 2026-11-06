@@ -1,0 +1,19 @@
+name: Publish Savsani Family release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release v2.6 with the APK and the Windows launcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v2.6 >/dev/null 2>&1 || gh release create v2.6 --title "Savsani Family V2.6 (latest)" --latest --notes "V2.6: smoother animations (GPU-friendly bottom sheet, no chat flicker on refresh, lighter glass blur, hardware acceleration)."
+          gh release upload v2.6 release/Savsani_Family_V2_6.apk release/Savsani_Family_Windows.exe --clobber
