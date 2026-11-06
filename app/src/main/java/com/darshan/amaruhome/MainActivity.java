@@ -228,6 +228,9 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void notifyNow(String title, String body) { Alarms.show(MainActivity.this, title, body); }
+
+        @JavascriptInterface
         public boolean canBiometric() { return Build.VERSION.SDK_INT >= 28; }
 
         @JavascriptInterface
@@ -235,7 +238,7 @@ public class MainActivity extends Activity {
             if (Build.VERSION.SDK_INT < 28) return;
             ui.post(() -> {
                 try {
-                    BiometricPrompt.Builder bp = new BiometricPrompt.Builder(MainActivity.this).setTitle("અમારું ઘર").setNegativeButton("PIN", getMainExecutor(), (d, w) -> { });
+                    BiometricPrompt.Builder bp = new BiometricPrompt.Builder(MainActivity.this).setTitle("Savsani Family").setNegativeButton("PIN", getMainExecutor(), (d, w) -> { });
                     bp.build().authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
                         @Override
                         public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) {
