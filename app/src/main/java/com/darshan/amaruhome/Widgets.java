@@ -36,7 +36,7 @@ public class Widgets {
         PendingIntent open = PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
         for (int id : m.getAppWidgetIds(new ComponentName(c, Today.class))) {
             RemoteViews v = new RemoteViews(c.getPackageName(), R_layout_today());
-            v.setTextViewText(R_id_title(), gu ? "અમારું ઘર" : "Our Home");
+            v.setTextViewText(R_id_title(), gu ? "સાવસાણી ફેમિલી" : "Savsani Family");
             String tasks = join(d.optJSONArray("tasks"), 3, "• ");
             v.setTextViewText(R_id_tasks(), (gu ? "આજના કામ: " : "Chores: ") + d.optInt("taskN", 0) + (tasks.isEmpty() ? "" : "\n" + tasks));
             JSONObject nx = d.optJSONObject("next");

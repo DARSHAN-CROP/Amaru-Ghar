@@ -52,11 +52,15 @@ public class Alarms extends BroadcastReceiver {
         }
         String title = in.getStringExtra("title");
         if (title == null || title.isEmpty()) return;
+        show(c, title, in.getStringExtra("body"));
+    }
+
+    static void show(Context c, String title, String body) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26) nm.createNotificationChannel(new NotificationChannel(CH, "Reminders", NotificationManager.IMPORTANCE_HIGH));
         PendingIntent open = PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CH) : new Notification.Builder(c);
-        b.setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle(title).setContentText(in.getStringExtra("body")).setContentIntent(open).setAutoCancel(true);
+        b.setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle(title).setContentText(body).setContentIntent(open).setAutoCancel(true);
         nm.notify((int) (System.currentTimeMillis() % 100000), b.build());
     }
 }

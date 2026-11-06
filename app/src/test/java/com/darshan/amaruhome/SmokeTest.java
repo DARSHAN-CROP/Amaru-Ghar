@@ -30,6 +30,7 @@ public class SmokeTest {
         assertTrue(a.getSharedPreferences("ag", Context.MODE_PRIVATE).getString("w", "").contains("Insurance"));
         Widgets.refresh(a);
         assertTrue(b.canBiometric());
+        b.notifyNow("Hi", "msg");
         assertEquals("{}", new org.json.JSONObject(b.getAuth()).optString("refresh").isEmpty() ? "{}" : "x");
     }
 }
