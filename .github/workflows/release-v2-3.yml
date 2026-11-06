@@ -1,0 +1,19 @@
+name: Publish Savsani Family release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release v2.3 with the APK and the Windows launcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v2.3 >/dev/null 2>&1 || gh release create v2.3 --title "Savsani Family V2.3 (latest)" --latest --notes "V2.3: WhatsApp-style attachments in the family chat (several photos at once, documents, audio, contact, poll, event, stickers, camera). Website works on any phone or PC. Tested in a headless browser only; the APK and exe have not been run on a real device."
+          gh release upload v2.3 release/Savsani_Family_V2_3.apk release/Savsani_Family_Windows.exe --clobber
